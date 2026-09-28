@@ -1,0 +1,43 @@
+{
+  "company": {
+    "name": "농심",
+    "corp_code": "00108241",
+    "stock_code": "004370"
+  },
+  "collection": {
+    "start_year": 2010,
+    "report_codes": {
+      "annual": "11011",
+      "half_year": "11012",
+      "quarterly_q1": "11013",
+      "quarterly_q3": "11014"
+    },
+    "api_note": "OpenDART 정기보고서 재무 API는 2015년 이후 정보 제공. 2010~2014는 legacy 구간으로 별도 원문/XBRL 보정 수집을 위한 상태를 남김."
+  },
+  "dashboard": {
+    "title": "농심 Financial Intelligence Dashboard",
+    "repo": "https://github.com/HSC-Class01/YR_nongshim.git"
+  },
+  "peers": [
+    {
+      "name": "오뚜기",
+      "stock_code": "007310"
+    },
+    {
+      "name": "삼양식품",
+      "stock_code": "003230"
+    },
+    {
+      "name": "동원F&B",
+      "stock_code": "049770"
+    },
+    {
+      "name": "대상",
+      "stock_code": "001680"
+    },
+    {
+      "name": "CJ제일제당",
+      "stock_code": "097950"
+    }
+  ]
+}

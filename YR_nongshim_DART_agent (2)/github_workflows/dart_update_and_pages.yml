@@ -1,0 +1,81 @@
+name: DART Update and GitHub Pages
+
+on:
+  schedule:
+    - cron: "10 0 1 * *"
+  push:
+    branches: ["main"]
+    paths:
+      - "src/**"
+      - "config/**"
+      - "dashboard/**"
+      - "data/**"
+      - "requirements.txt"
+      - "github_workflows/dart_update_and_pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: dart-pages
+  cancel-in-progress: false
+
+jobs:
+  update-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Collect OpenDART data
+        env:
+          DART_API_KEY: ${{ secrets.DART_API_KEY }}
+        run: python src/collect_dart.py
+
+      - name: Calculate ratios
+        run: python src/analyze.py
+
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/
+          git diff --cached --quiet || git commit -m "chore(data): update DART financial data"
+          git push
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Prepare site
+        run: |
+          rm -rf _site
+          mkdir -p _site/data
+          cp -r dashboard/* _site/
+          cp data/*.json _site/data/
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: "_site"
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
