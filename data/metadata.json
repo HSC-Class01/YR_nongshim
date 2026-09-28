@@ -1,0 +1,10 @@
+{
+  "company": {
+    "name": "농심",
+    "corp_code": "00108241",
+    "stock_code": "004370"
+  },
+  "updated_at": "Initial package — run collector after adding DART_API_KEY",
+  "start_year": 2010,
+  "end_year": 2026
+}
