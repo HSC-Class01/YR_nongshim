@@ -6,108 +6,98 @@
 
 [![Dashboard](https://img.shields.io/badge/%F0%9F%94%97%20Dashboard-%EB%86%8D%EC%8B%AC%20Financial%20Dashboard-174d3b?style=for-the-badge)](https://HSC-Class01.github.io/YR_nongshim/)
 
-> 실제 Pages URL은 GitHub Pages가 활성화된 후 `https://HSC-Class01.github.io/YR_nongshim/` 형태입니다.
-
 ## 1. 구성
 
 - `src/collect_dart.py` — OpenDART 정기보고서 재무 API 수집
 - `src/analyze.py` — 주요 재무비율 계산
-- `dashboard/index.html` — 정적 GitHub Pages dashboard
-- `data/financials.json`, `data/financials.csv` — 수집 원자료
+- `src/validate.py` — 수집 결과 검증
+- `dashboard/index.html` — GitHub Pages 정적 dashboard
+- `data/financials.json`, `data/financials.csv` — 수집 데이터
 - `data/analysis.json` — 분석 결과
-- `github_workflows/` — ZIP에서 숨김 폴더를 피하기 위한 workflow 원본
-- `scripts/install_workflow.ps1` — `.github/workflows`로 workflow를 설치하는 스크립트
-- `config/config.json` — 농심 및 peer 설정
+- `.github/workflows/dart_update_and_pages.yml` — 월 1일 자동 수집·분석·Pages 배포
+- `config/config.json` — 농심 및 국내 peer 설정
 
-## 2. 핵심 재무수치
+## 2. 분석 항목
 
-재무상태표: 총자산, 현금및현금성자산, 매출채권, 재고자산, 유형자산, 총부채, 차입금, 자본총계
+**재무상태표:** 총자산, 현금및현금성자산, 매출채권, 재고자산, 유형자산, 총부채, 차입금, 자본총계
 
-손익계산서: 매출액, 매출총이익, 영업이익, 세전이익, 당기순이익, 지배주주순이익, 이자비용, 감가상각비
+**손익계산서:** 매출액, 매출총이익, 영업이익, 세전이익, 당기순이익, 지배주주순이익, 이자비용, 감가상각비
 
-현금흐름: 영업활동현금흐름(CFO), 투자활동현금흐름(CFI), 재무활동현금흐름(CFF), FCF
+**현금흐름:** 영업활동현금흐름(CFO), 투자활동현금흐름(CFI), 재무활동현금흐름(CFF), FCF
 
-재무비율: 매출총이익률, 영업이익률, 순이익률, 부채비율, 자기자본비율, 차입금의존도, 이자보상배율, 순차입금, CFO/순이익, 매출증가율 등
+**재무비율:** 매출총이익률, 영업이익률, 순이익률, 부채비율, 자기자본비율, 차입금의존도, 이자보상배율, 순차입금, CFO/순이익, 매출증가율
 
-## 3. 기간
+## 3. 기간과 데이터 범위
 
 요청 범위는 2010년부터입니다.
 
-중요: OpenDART의 현재 `단일회사 전체 재무제표` API는 공식적으로 2015년 이후 정보를 제공합니다. 따라서 2010~2014는 자동으로 허위 수치를 만들지 않고 `legacy_not_available_via_current_fnltt_api` 상태로 남깁니다. 해당 구간을 완전하게 채우려면 DART 원문/legacy 자료를 별도 매핑하는 추가 단계가 필요합니다.
+OpenDART의 현재 `fnlttSinglAcntAll` API는 공식적으로 2015년 이후 사업연도 정보를 제공합니다. 따라서 2010~2014는 허위 수치를 생성하지 않고 `legacy_not_available_via_current_fnltt_api`로 표시합니다. 2015년 이후 데이터는 DART API Key가 등록되면 자동 수집됩니다.
 
-## 4. API Key 입력
-
-### 로컬 실행
-
-Windows PowerShell:
-
-```powershell
-$env:DART_API_KEY="발급받은_40자리_OpenDART_API_KEY"
-python -m pip install -r requirements.txt
-python src/collect_dart.py
-python src/analyze.py
-```
-
-### GitHub Actions
+## 4. API Key
 
 Repository → **Settings → Secrets and variables → Actions → New repository secret**
 
 - Name: `DART_API_KEY`
-- Secret: OpenDART에서 발급받은 40자리 인증키
+- Value: OpenDART에서 발급받은 40자리 인증키
 
-API Key는 코드나 README에 직접 입력하지 마세요.
+API Key는 코드, README, dashboard에 저장하지 않습니다.
 
-OpenDART API: https://opendart.fss.or.kr/
+## 5. 자동 업데이트
 
-## 5. GitHub Actions 설치
+GitHub Actions가 매월 1일 **09:10 KST (00:10 UTC)**에 실행됩니다.
 
-ZIP에서는 `.github`가 숨김 폴더로 취급될 수 있어 업로드 편의를 위해 workflow를 `github_workflows/`에 넣었습니다.
+1. OpenDART에서 사업보고서·반기보고서·1분기보고서·3분기보고서 수집
+2. 재무비율 계산
+3. 데이터 검증
+4. `data/` 자동 commit
+5. GitHub Pages dashboard 재배포
 
-PowerShell에서 저장소 루트에서:
+또한 Actions 화면에서 `workflow_dispatch`로 수동 실행할 수 있습니다.
 
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\install_workflow.ps1
-```
+## 6. GitHub Pages
 
-그러면 다음 workflow가 생성됩니다.
+Repository → **Settings → Pages → Build and deployment → Source: GitHub Actions**
 
-- `.github/workflows/dart_update_and_pages.yml` — 매월 1일 09:10 KST(UTC 00:10) 데이터 수집 → 분석 → commit → GitHub Pages 배포
+배포 주소:
 
-데이터 업데이트와 Pages 배포를 하나의 workflow에서 처리하므로, `GITHUB_TOKEN`으로 데이터 commit을 만든 뒤 별도 workflow가 다시 트리거되지 않는 문제를 피합니다.
-
-두 workflow 모두 `workflow_dispatch`로 수동 실행할 수 있습니다.
-
-## 6. GitHub Pages 설정
-
-Repository → Settings → Pages → Build and deployment → Source를 **GitHub Actions**로 선택하세요.
-
-GitHub 공식 문서의 Pages artifact/deploy 방식에 맞춰 구성되어 있습니다.
+https://HSC-Class01.github.io/YR_nongshim/
 
 ## 7. About 섹션
 
-Repository → About → 톱니바퀴(Edit repository details)에서 Website에:
+Repository의 **About → Edit repository details → Website**에 다음 주소를 입력하세요.
 
-`https://HSC-Class01.github.io/YR_nongshim/`
+https://HSC-Class01.github.io/YR_nongshim/
 
-를 입력하세요.
+## 8. 국내 Peer Firms
 
-## 8. Peer firms
+농심과 비교 가능한 국내 식품 제조·가공 상장사를 다음과 같이 설정했습니다.
 
-초기 peer set:
+| 기업 | KRX | 비교 목적 |
+|---|---:|---|
+| CJ제일제당 | 097950 | 종합식품·가공식품 |
+| 동원F&B | 049770 | 식품 제조·가공 |
+| 대상 | 001680 | 식품·소재·가공 |
+| 오뚜기 | 007310 | 가공식품·면류·소스 |
+| 삼양식품 | 003230 | 면류·가공식품 |
 
-| 기업 | KRX |
-|---|---:|
-| 오뚜기 | 007310 |
-| 삼양식품 | 003230 |
-| 동원F&B | 049770 |
-| 대상 | 001680 |
-| CJ제일제당 | 097950 |
+Peer set은 재무구조와 사업구조 비교를 위한 분석용 비교군이며 투자 판단을 위한 순위가 아닙니다.
 
-Peer set은 국내 식품 제조/가공업에서 농심과 사업구조가 겹치는 비교군을 위한 것입니다.
+## 9. Dashboard
 
-## 9. 주의
+상단에는 핵심 KPI와 매출·영업이익 및 수익성 추이를 시각화하고, 하단에는 다음 3개 표를 제공합니다.
 
-- GitHub Pages는 공개 웹사이트이므로 API key를 repository에 저장하지 않습니다.
-- 데이터가 없는 기간은 `N/A`로 표시합니다.
-- 연결/별도 기준을 혼합하지 않도록 기본 수집은 연결재무제표(CFS)입니다.
-- 공시 계정명이 바뀌는 경우 `src/collect_dart.py`의 `ALIASES`를 추가하면 됩니다.
+- **Annual:** 사업보고서
+- **Half-year:** 반기보고서
+- **Quarterly:** 1분기·3분기보고서
+
+Dashboard 최하단에는 국내 peer firms table을 제공합니다.
+
+## 10. 데이터 원칙
+
+- 기본 재무제표 기준은 연결재무제표(CFS)
+- 값이 없는 기간은 0으로 대체하지 않고 N/A 처리
+- 공시 계정명 변경에 대응할 수 있도록 alias 기반 추출
+- OpenDART 제공 범위 밖의 2010~2014는 별도 legacy 보정 대상으로 표시
+- 원자료와 분석자료를 구분하여 저장
+
+Source: OpenDART / 금융감독원
