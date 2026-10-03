@@ -56,7 +56,17 @@ GitHub Actions가 매월 1일 **09:10 KST (00:10 UTC)**에 실행됩니다.
 
 ## 6. GitHub Pages
 
-Repository → **Settings → Pages → Build and deployment → Source: GitHub Actions**
+이 저장소는 `gh-pages` 브랜치를 GitHub Pages publishing source로 사용합니다.
+GitHub Actions의 DART 수집·분석이 완료되면 dashboard와 최신 `data/`가 `gh-pages` 브랜치에 자동 배포됩니다.
+
+최초 1회만 Repository → **Settings → Pages → Build and deployment**에서:
+
+- **Source:** Deploy from a branch
+- **Branch:** `gh-pages`
+- **Folder:** `/ (root)`
+- **Save**
+
+현재 GitHub Actions의 기본 `GITHUB_TOKEN`으로 Pages 사이트 자체를 생성하는 단계에서 권한 오류가 발생하여, Pages 설정은 관리자 계정에서 위와 같이 한 번 활성화해야 합니다. 이후에는 매월 자동 배포됩니다.
 
 배포 주소:
 
