@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>농심 Financial Intelligence Dashboard</title>
+<style>
+body{margin:0;background:#f5f8f6;color:#14231d;font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+header{padding:48px 6vw 36px;background:linear-gradient(135deg,#fff,#eaf5ef);border-bottom:1px solid #dce7e1}
+main{max-width:1450px;margin:auto;padding:28px 6vw 70px}.kicker{color:#2f765b;font-size:12px;font-weight:800;letter-spacing:.12em}
+h1{font-size:42px;margin:10px 0}.sub,.meta,.note{color:#68766f;line-height:1.7}
+a{display:inline-block;background:#174d3b;color:white;text-decoration:none;padding:10px 16px;border-radius:999px;font-weight:800;font-size:12px}
+.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:#fff;border:1px solid #dce7e1;border-radius:18px;padding:18px;box-shadow:0 7px 24px #14372a0d}
+.label{font-size:12px;color:#68766f}.metric{font-size:27px;font-weight:850;margin-top:7px}
+.charts{display:grid;grid-template-columns:1.4fr 1fr;gap:18px;margin-top:24px}.chart{height:340px}
+section{margin-top:34px}.tablewrap{overflow:auto;background:#fff;border:1px solid #dce7e1;border-radius:16px}
+table{border-collapse:collapse;width:100%;min-width:1250px}th,td{padding:10px 12px;border-bottom:1px solid #edf2ef;font-size:11px;white-space:nowrap;text-align:right}th{background:#f0f7f3;color:#174d3b}th:first-child,td:first-child{text-align:left}
+.peers{display:grid;grid-template-columns:repeat(5,1fr);gap:12px}.peer{background:#fff;border:1px solid #dce7e1;border-radius:16px;padding:16px}
+@media(max-width:900px){.cards,.peers,.charts{grid-template-columns:1fr 1fr}.charts{grid-template-columns:1fr}h1{font-size:32px}}@media(max-width:560px){.cards,.peers{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header><div class="kicker">DART × DATA × FINANCE</div><h1>농심 Financial Intelligence Dashboard</h1>
+<p class="sub">농심의 사업보고서·반기보고서·분기보고서를 OpenDART에서 수집하고 주요 재무수치와 재무비율을 시각화합니다.</p>
+<a href="https://github.com/HSC-Class01/YR_nongshim">GitHub Repository</a><div class="meta" id="updated">데이터를 불러오는 중…</div></header>
+<main>
+<div class="cards" id="metrics"></div>
+<div class="charts"><div class="card"><h2>매출액 · 영업이익</h2><div class="chart"><canvas id="revenueChart"></canvas></div></div>
+<div class="card"><h2>수익성 추이</h2><div class="chart"><canvas id="marginChart"></canvas></div></div></div>
+<section><h2>Annual · 연간</h2><div class="tablewrap"><table id="annual"></table></div></section>
+<section><h2>Half-year · 반기</h2><div class="tablewrap"><table id="half"></table></div></section>
+<section><h2>Quarterly · 분기</h2><div class="tablewrap"><table id="quarter"></table></div></section>
+<section><h2>Domestic Peer Firms</h2><p class="note">농심과 사업구조가 비교 가능한 국내 식품 제조·가공 상장사 peer set입니다.</p><div class="peers" id="peers"></div></section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+const peers=[["오뚜기","007310"],["삼양식품","003230"],["동원F&B","049770"],["대상","001680"],["CJ제일제당","097950"]];
+const fmt=v=>v==null||Number.isNaN(Number(v))?"N/A":new Intl.NumberFormat("ko-KR",{maximumFractionDigits:1}).format(Number(v));
+const pct=v=>v==null||Number.isNaN(Number(v))?"N/A":(Number(v)*100).toFixed(1)+"%";
+const cols=[["year","연도"],["period_detail","보고서"],["revenue","매출액"],["gross_profit","매출총이익"],["operating_income","영업이익"],["net_income","당기순이익"],["total_assets","총자산"],["total_liabilities","총부채"],["equity","자본총계"],["cash","현금"],["borrowings","차입금"],["cfo","영업CF"],["cfi","투자CF"],["cff","재무CF"],["gross_margin","매출총이익률"],["operating_margin","영업이익률"],["net_margin","순이익률"],["debt_ratio","부채비율"],["equity_ratio","자기자본비율"],["borrowing_dependency","차입금의존도"],["interest_coverage","이자보상배율"],["net_debt","순차입금"],["fcf","FCF"],["revenue_growth","매출증가율"]];
+async function load(){
+ const [r,m]=await Promise.all([fetch("./data/analysis.json?"+Date.now()),fetch("./data/metadata.json?"+Date.now())]);
+ const rows=await r.json(),meta=await m.json();
+ document.getElementById("updated").textContent="Last update: "+meta.updated_at+" · "+meta.start_year+"–"+meta.end_year;
+ const annual=rows.filter(x=>x.period==="annual"&&x.status==="ok").sort((a,b)=>a.year-b.year),latest=annual.at(-1)||rows.filter(x=>x.status==="ok").at(-1)||{};
+ document.getElementById("metrics").innerHTML=[["매출액",fmt(latest.revenue)],["영업이익",fmt(latest.operating_income)],["영업이익률",pct(latest.operating_margin)],["순차입금",fmt(latest.net_debt)]].map(x=>'<div class="card"><div class="label">'+x[0]+'</div><div class="metric">'+x[1]+'</div></div>').join("");
+ new Chart(document.getElementById("revenueChart"),{type:"line",data:{labels:annual.map(x=>x.year),datasets:[{label:"매출액",data:annual.map(x=>x.revenue),tension:.25},{label:"영업이익",data:annual.map(x=>x.operating_income),tension:.25}]},options:{responsive:true,maintainAspectRatio:false}});
+ new Chart(document.getElementById("marginChart"),{type:"line",data:{labels:annual.map(x=>x.year),datasets:[{label:"영업이익률",data:annual.map(x=>x.operating_margin).map(v=>v==null?null:v*100),tension:.25},{label:"순이익률",data:annual.map(x=>x.net_margin).map(v=>v==null?null:v*100),tension:.25}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{ticks:{callback:v=>v+"%"}}}}});
+ function table(id,p){const rr=rows.filter(x=>x.period===p).sort((a,b)=>b.year-a.year);document.getElementById(id).innerHTML="<thead><tr>"+cols.map(c=>"<th>"+c[1]+"</th>").join("")+"</tr></thead><tbody>"+rr.map(x=>"<tr>"+cols.map(c=>{let v=x[c[0]],o=["gross_margin","operating_margin","net_margin","debt_ratio","equity_ratio","borrowing_dependency","revenue_growth"].includes(c[0])?pct(v):typeof v==="number"?fmt(v):String(v??"N/A");return "<td>"+o+"</td>"}).join("")+"</tr>").join("")+"</tbody>"}
+ table("annual","annual");table("half","half_year");table("quarter","quarterly");
+ document.getElementById("peers").innerHTML=peers.map(p=>'<div class="peer"><b>'+p[0]+'</b><div class="label">KRX '+p[1]+"</div></div>").join("");
+}
+load().catch(e=>document.getElementById("updated").textContent="데이터 로딩 실패: "+e.message);
+</script>
+</body></html>
