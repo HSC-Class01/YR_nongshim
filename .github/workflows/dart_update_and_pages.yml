@@ -15,6 +15,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: dart-pages
@@ -69,23 +71,14 @@ jobs:
           cp data/financials.csv _site/data/financials.csv
           touch _site/.nojekyll
 
-      - name: Publish Pages branch
-        run: |
-          # Move the generated site outside the worktree before switching branches.
-          rm -rf /tmp/pages-site
-          mkdir -p /tmp/pages-site
-          cp -R _site/. /tmp/pages-site/
-          rm -rf _site
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
 
-          git fetch origin gh-pages
-          git checkout -B gh-pages origin/gh-pages
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
 
-          # Replace the published site contents while preserving gh-pages history.
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -R /tmp/pages-site/. .
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git diff --cached --quiet || git commit -m "deploy: GitHub Pages"
-          git push origin gh-pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
