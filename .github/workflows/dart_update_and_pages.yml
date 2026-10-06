@@ -22,7 +22,7 @@ concurrency:
 
 jobs:
   update-and-deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
@@ -71,15 +71,15 @@ jobs:
 
       - name: Publish Pages branch
         run: |
-          rm -rf /tmp/pages-site
-          mkdir -p /tmp/pages-site
-          cp -R _site/. /tmp/pages-site/
+          git fetch origin gh-pages
+          git checkout -B gh-pages origin/gh-pages
 
-          git switch --orphan gh-pages
-          git rm -rf . || true
-          cp -R /tmp/pages-site/. .
+          # Replace the published site contents while preserving the gh-pages history.
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R _site/. .
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "deploy: GitHub Pages"
-          git push origin gh-pages --force
+          git diff --cached --quiet || git commit -m "deploy: GitHub Pages"
+          git push origin gh-pages
